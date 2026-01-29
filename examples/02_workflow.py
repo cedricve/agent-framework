@@ -141,7 +141,7 @@ async def main():
             elif isinstance(event, WorkflowOutputEvent):
                 print("Workflow has completed.")
                 print("Final conversation:")
-                for msg in event.data:
+                for msg in event.data.conversation:
                     print(f"{msg.author_name}: {msg.text}")
 
 
