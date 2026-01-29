@@ -1,11 +1,13 @@
+
 import os
 import asyncio
 from typing import Annotated
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from agent_framework import ChatAgent, ai_function, HandoffBuilder, RequestInfoEvent, HandoffUserInputRequest, WorkflowOutputEvent
 from agent_framework.azure import AzureOpenAIChatClient
-from agent_framework.observability import setup_observability
 from dotenv import load_dotenv
+from agent_framework.observability import setup_observability
+
 
 # Configure observability with Azure Application Insights
 # You can also use OTLP endpoint or other exporters
@@ -59,10 +61,8 @@ async def main():
     triage_agent = ChatAgent(
         chat_client=chat_client,
         instructions=(
-            "You are frontline support triage. Route customer issues to the appropriate specialist agents. "
-            "You can ONLY route to: order_agent (for order/shipping inquiries) or return_agent (for returns). "
-            "You CANNOT route directly to refund_agent. For refund requests, route to return_agent first, "
-            "who will then handle the refund process if appropriate."
+            "You are frontline support triage. Route customer issues to the appropriate specialist agents "
+            "based on the problem described."
         ),
         description="Triage agent that handles general inquiries.",
         name="triage_agent",
@@ -111,6 +111,10 @@ async def main():
             # conversation has concluded naturally.
             lambda conversation: len(conversation) > 0 and "welcome" in conversation[-1].text.lower()
         )
+        # Triage cannot route directly to refund agent
+        .add_handoff(triage_agent, [order_agent])
+        .add_handoff(order_agent, [refund_agent])
+        .add_handoff(refund_agent, [triage_agent])
         .build()
     )
 
@@ -150,6 +154,8 @@ async def main():
             elif isinstance(event, WorkflowOutputEvent):
                 print("Workflow has completed.")
                 print("Final conversation:")
+                for msg in event.data.conversation:
+                    print(f"{msg.author_name}: {msg.text}")
 
 
 if __name__ == "__main__":
