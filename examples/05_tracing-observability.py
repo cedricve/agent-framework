@@ -4,21 +4,15 @@ from typing import Annotated
 from azure.identity import AzureCliCredential, get_bearer_token_provider
 from agent_framework import ChatAgent, ai_function, HandoffBuilder, RequestInfoEvent, HandoffUserInputRequest, WorkflowOutputEvent
 from agent_framework.azure import AzureOpenAIChatClient
+from agent_framework.observability import setup_observability
 from dotenv import load_dotenv
 
-from azure.monitor.opentelemetry import configure_azure_monitor
-from agent_framework.observability import create_resource, enable_instrumentation
-
-
-# Configure Azure Monitor
-configure_azure_monitor(
-    connection_string="InstrumentationKey=b566ece7-c899-4e68-8060-f1ad752672f1;IngestionEndpoint=https://swedencentral-0.in.applicationinsights.azure.com/;LiveEndpoint=https://swedencentral.livediagnostics.monitor.azure.com/;ApplicationId=5daccc84-55ad-4515-9262-313c6102fe4f",
-    resource=create_resource(),
-    enable_live_metrics=True,
+# Configure observability with Azure Application Insights
+# You can also use OTLP endpoint or other exporters
+setup_observability(
+    applicationinsights_connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+    enable_sensitive_data=False,  # Set to True to include message content in traces
 )
-# Optional if ENABLE_INSTRUMENTATION is already set in env vars
-enable_instrumentation()
-
 
 load_dotenv()
 endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "https://your-resource.openai.azure.com/")
