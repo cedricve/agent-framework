@@ -9,6 +9,17 @@ from dotenv import load_dotenv
 from azure.monitor.opentelemetry import configure_azure_monitor
 from agent_framework.observability import create_resource, enable_instrumentation
 
+
+# Configure Azure Monitor
+configure_azure_monitor(
+    connection_string="InstrumentationKey=b566ece7-c899-4e68-8060-f1ad752672f1;IngestionEndpoint=https://swedencentral-0.in.applicationinsights.azure.com/;LiveEndpoint=https://swedencentral.livediagnostics.monitor.azure.com/;ApplicationId=5daccc84-55ad-4515-9262-313c6102fe4f",
+    resource=create_resource(),
+    enable_live_metrics=True,
+)
+# Optional if ENABLE_INSTRUMENTATION is already set in env vars
+enable_instrumentation()
+
+
 load_dotenv()
 endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "https://your-resource.openai.azure.com/")
 deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini")
@@ -106,15 +117,6 @@ async def main():
             # conversation has concluded naturally.
             lambda conversation: len(conversation) > 0 and "welcome" in conversation[-1].text.lower()
         )
-        # Triage cannot route directly to refund agent
-        .add_handoff(triage_agent, [order_agent, return_agent])
-        # Only the return agent can handoff to refund agent - users wanting refunds after returns
-        .add_handoff(return_agent, [refund_agent])
-        # All specialists can handoff back to triage for furefunrther routing
-        .add_handoff(order_agent, [triage_agent])
-        .add_handoff(return_agent, [triage_agent])
-        .add_handoff(refund_agent, [triage_agent])
-        #.with_autonomous_mode(agents=[triage_agent])
         .build()
     )
 
