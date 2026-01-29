@@ -102,12 +102,8 @@ async def main():
             lambda conversation: len(conversation) > 0 and "welcome" in conversation[-1].text.lower()
         )
         # Triage cannot route directly to refund agent
-        .add_handoff(triage_agent, [order_agent, return_agent])
-        # Only the return agent can handoff to refund agent - users wanting refunds after returns
-        .add_handoff(return_agent, [refund_agent])
-        # All specialists can handoff back to triage for furefunrther routing
-        .add_handoff(order_agent, [triage_agent])
-        .add_handoff(return_agent, [triage_agent])
+        .add_handoff(triage_agent, [order_agent])
+        .add_handoff(order_agent, [refund_agent])
         .add_handoff(refund_agent, [triage_agent])
         #.with_autonomous_mode(agents=[triage_agent])
         .build()
