@@ -13,7 +13,7 @@ from agent_framework.observability import setup_observability
 # You can also use OTLP endpoint or other exporters
 setup_observability(
     applicationinsights_connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"),
-    enable_sensitive_data=False,  # Set to True to include message content in traces
+    enable_sensitive_data=True,  # Include message content, prompts, and responses in traces
 )
 
 load_dotenv()
