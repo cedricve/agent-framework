@@ -1,4 +1,3 @@
-
 import os
 import asyncio
 from typing import Annotated
@@ -52,8 +51,10 @@ async def main():
     triage_agent = ChatAgent(
         chat_client=chat_client,
         instructions=(
-            "You are frontline support triage. Route customer issues to the appropriate specialist agents "
-            "based on the problem described."
+            "You are frontline support triage. Route customer issues to the appropriate specialist agents. "
+            "You can ONLY route to: order_agent (for order/shipping inquiries) or return_agent (for returns). "
+            "You CANNOT route directly to refund_agent. For refund requests, route to return_agent first, "
+            "who will then handle the refund process if appropriate."
         ),
         description="Triage agent that handles general inquiries.",
         name="triage_agent",
@@ -102,6 +103,15 @@ async def main():
             # conversation has concluded naturally.
             lambda conversation: len(conversation) > 0 and "welcome" in conversation[-1].text.lower()
         )
+        # Triage cannot route directly to refund agent
+        .add_handoff(triage_agent, [order_agent, return_agent])
+        # Only the return agent can handoff to refund agent - users wanting refunds after returns
+        .add_handoff(return_agent, [refund_agent])
+        # All specialists can handoff back to triage for furefunrther routing
+        .add_handoff(order_agent, [triage_agent])
+        .add_handoff(return_agent, [triage_agent])
+        .add_handoff(refund_agent, [triage_agent])
+        #.with_autonomous_mode(agents=[triage_agent])
         .build()
     )
 

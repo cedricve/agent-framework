@@ -150,6 +150,8 @@ async def main():
             elif isinstance(event, WorkflowOutputEvent):
                 print("Workflow has completed.")
                 print("Final conversation:")
+                for msg in event.data:
+                    print(f"{msg.author_name}: {msg.text}")
 
 
 if __name__ == "__main__":
