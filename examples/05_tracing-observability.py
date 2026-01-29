@@ -1,11 +1,13 @@
-
 import os
 import asyncio
 from typing import Annotated
 from azure.identity import AzureCliCredential, get_bearer_token_provider
-from agent_framework import ai_function, HandoffBuilder, RequestInfoEvent, HandoffAgentUserRequest, WorkflowOutputEvent
+from agent_framework import ai_function, HandoffBuilder, RequestInfoEvent, HandoffUserInputRequest, WorkflowOutputEvent
 from agent_framework.azure import AzureOpenAIChatClient
 from dotenv import load_dotenv
+
+from azure.monitor.opentelemetry import configure_azure_monitor
+from agent_framework.observability import create_resource, enable_instrumentation
 
 load_dotenv()
 endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "https://your-resource.openai.azure.com/")
@@ -51,8 +53,10 @@ async def main():
     # Create triage/coordinator agent
     triage_agent = chat_client.as_agent(
         instructions=(
-            "You are frontline support triage. Route customer issues to the appropriate specialist agents "
-            "based on the problem described."
+            "You are frontline support triage. Route customer issues to the appropriate specialist agents. "
+            "You can ONLY route to: order_agent (for order/shipping inquiries) or return_agent (for returns). "
+            "You CANNOT route directly to refund_agent. For refund requests, route to return_agent first, "
+            "who will then handle the refund process if appropriate."
         ),
         description="Triage agent that handles general inquiries.",
         name="triage_agent",
@@ -98,6 +102,15 @@ async def main():
             # conversation has concluded naturally.
             lambda conversation: len(conversation) > 0 and "welcome" in conversation[-1].text.lower()
         )
+        # Triage cannot route directly to refund agent
+        .add_handoff(triage_agent, [order_agent, return_agent])
+        # Only the return agent can handoff to refund agent - users wanting refunds after returns
+        .add_handoff(return_agent, [refund_agent])
+        # All specialists can handoff back to triage for furefunrther routing
+        .add_handoff(order_agent, [triage_agent])
+        .add_handoff(return_agent, [triage_agent])
+        .add_handoff(refund_agent, [triage_agent])
+        #.with_autonomous_mode(agents=[triage_agent])
         .build()
     )
 
@@ -107,7 +120,7 @@ async def main():
     # Process events and collect pending input requests
     pending_requests = []
     for event in events:
-        if isinstance(event, RequestInfoEvent) and isinstance(event.data, HandoffAgentUserRequest):
+        if isinstance(event, RequestInfoEvent) and isinstance(event.data, HandoffUserInputRequest):
             pending_requests.append(event)
             request_data = event.data
             print(f"Agent {event.source_executor_id} is awaiting your input")
@@ -121,14 +134,14 @@ async def main():
         user_input = input("You: ")
 
         # Send responses to all pending requests
-        responses = {req.request_id: HandoffAgentUserRequest.create_response(user_input) for req in pending_requests}
-        # You can also send a `HandoffAgentUserRequest.terminate()` to end the workflow early
+        responses = {req.request_id: HandoffUserInputRequest.create_response(user_input) for req in pending_requests}
+        # You can also send a `HandoffUserInputRequest.terminate()` to end the workflow early
         events = [event async for event in workflow.send_responses_streaming(responses)]
 
         # Process new events
         pending_requests = []
         for event in events:
-            if isinstance(event, RequestInfoEvent) and isinstance(event.data, HandoffAgentUserRequest):
+            if isinstance(event, RequestInfoEvent) and isinstance(event.data, HandoffUserInputRequest):
                 pending_requests.append(event)
                 request_data = event.data
                 print(f"Agent {event.source_executor_id} is awaiting your input")
