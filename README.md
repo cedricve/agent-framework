@@ -26,10 +26,11 @@ Before running these samples, ensure you have:
 ├── requirements.txt
 ├── .env.example
 ├── examples/
-│   ├── 01_basic_agent.py           # Simple agent example
-│   ├── 02_agent_with_tools.py      # Agent with function calling
-│   ├── 03_multi_turn_conversation.py  # Multi-turn chat with threads
-│   └── 04_workflow_example.py      # Multi-agent workflow
+│   ├── 01_basic_agent.py              # Single agent with tools
+│   ├── 02_workflow.py                 # Multi-agent handoff workflow
+│   ├── 03_strict_workflow.py          # Workflow with restricted handoff paths
+│   ├── 04_strict_workflow_nobypass.py # Workflow preventing direct agent bypass
+│   └── 05_tracing-observability.py    # Workflow with OpenTelemetry tracing
 └── .gitignore
 ```
 
@@ -37,39 +38,53 @@ Before running these samples, ensure you have:
 
 ### 1. Basic Agent (`01_basic_agent.py`)
 
-A simple example showing how to create and run a basic AI agent using Azure OpenAI.
+A simple example showing how to create and run a single AI agent with tool calling using Azure OpenAI.
 
 **Key Concepts:**
-- Creating an AI agent with Azure OpenAI
-- Setting custom instructions
-- Running simple queries
+- Creating a `ChatAgent` with `AzureOpenAIChatClient`
+- Defining tools using the `@ai_function` decorator
+- Azure AD authentication with `AzureCliCredential`
+- Running queries and handling tool invocations
 
-### 2. Agent with Tools (`02_agent_with_tools.py`)
+### 2. Multi-Agent Workflow (`02_workflow.py`)
 
-Demonstrates how to equip an agent with custom function tools for enhanced capabilities.
-
-**Key Concepts:**
-- Creating custom tools using decorators
-- Function descriptions and parameters
-- Tool invocation during agent execution
-
-### 3. Multi-Turn Conversation (`03_multi_turn_conversation.py`)
-
-Shows how to maintain context across multiple interactions using agent threads.
+Demonstrates a customer support system with multiple specialized agents coordinated through handoffs.
 
 **Key Concepts:**
-- Creating and managing agent threads
-- Maintaining conversation state
-- Multi-turn dialogue handling
+- Creating multiple `ChatAgent` instances (triage, refund, order, return agents)
+- Building handoff workflows with `HandoffBuilder`
+- Setting a coordinator agent with `.set_coordinator()`
+- Handling `RequestInfoEvent` and `HandoffUserInputRequest` for user interaction
+- Custom termination conditions
 
-### 4. Workflow Example (`04_workflow_example.py`)
+### 3. Strict Workflow (`03_strict_workflow.py`)
 
-Advanced example showing how to orchestrate multiple agents in a workflow.
+Shows how to restrict which agents can hand off to which other agents, creating controlled conversation flows.
 
 **Key Concepts:**
-- Creating multi-agent workflows
-- Sequential and parallel execution
-- Agent coordination patterns
+- Defining explicit handoff paths with `.add_handoff(source, [targets])`
+- Preventing triage from routing directly to refund agent
+- Creating agent hierarchies (return agent → refund agent)
+- Bi-directional handoffs back to triage for re-routing
+
+### 4. Strict Workflow - No Bypass (`04_strict_workflow_nobypass.py`)
+
+Similar to example 3, but with enhanced instructions to prevent agents from bypassing the defined handoff rules.
+
+**Key Concepts:**
+- Agent instructions that explicitly state routing constraints
+- Enforcing workflow policies through both code and prompts
+- Defense-in-depth approach to agent coordination
+
+### 5. Tracing & Observability (`05_tracing-observability.py`)
+
+Demonstrates how to add OpenTelemetry tracing to agent workflows for monitoring and debugging.
+
+**Key Concepts:**
+- Configuring observability with `setup_observability()`
+- Sending traces to Azure Application Insights
+- OTLP exporter support for LangSmith or other backends
+- Environment variables: `APPLICATIONINSIGHTS_CONNECTION_STRING`, `OTEL_EXPORTER_OTLP_ENDPOINT`
 
 ## Getting Started
 
