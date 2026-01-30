@@ -5,6 +5,7 @@ from azure.identity import AzureCliCredential, get_bearer_token_provider
 from agent_framework import ChatAgent, ai_function
 from agent_framework.azure import AzureOpenAIChatClient
 from dotenv import load_dotenv
+from agent_framework.devui import serve
 
 load_dotenv()
 endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "https://your-resource.openai.azure.com/")
@@ -16,13 +17,6 @@ def get_weather(location: str) -> str:
     """Get the current weather for a given location."""
     print(f"[TOOL CALLED] get_weather(location='{location}')")
     return f"The weather in {location} is sunny."
-
-@ai_function
-def buy_tickets(event: str, number_of_tickets: int) -> str:
-    """Buy tickets for an event."""
-    print(f"[TOOL CALLED] buy_tickets(event='{event}', number_of_tickets={number_of_tickets})")
-    print(f"Purchased {number_of_tickets} tickets for {event}.")
-    return f"Bought {number_of_tickets} tickets for {event}."
 
 async def main():
     print("This is the main entry point of the application.")
@@ -82,7 +76,7 @@ async def main():
         chat_client=chat_client,
         instructions="You are a helpful assistant. If you call a tool, use the provided functions, do not make up responses, just use the responses from the tools as is.",
         name="AzureOpenAIChatAgent",
-        tools=[get_weather, buy_tickets]
+        tools=[get_weather]
     )
     # Further implementation would go here. 
     print("ChatAgent initialized.")
@@ -101,3 +95,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+    
