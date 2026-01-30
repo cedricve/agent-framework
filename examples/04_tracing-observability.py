@@ -111,15 +111,11 @@ async def main():
             # conversation has concluded naturally.
             lambda conversation: len(conversation) > 0 and "welcome" in conversation[-1].text.lower()
         )
-        # Triage cannot route directly to refund agent
-        .add_handoff(triage_agent, [order_agent])
-        .add_handoff(order_agent, [refund_agent])
-        .add_handoff(refund_agent, [triage_agent])
         .build()
     )
 
     # Start workflow with initial user message
-    events = [event async for event in workflow.run_stream("I need help with my order")]
+    events = [event async for event in workflow.run_stream("I need help")]
 
     # Process events and collect pending input requests
     pending_requests = []

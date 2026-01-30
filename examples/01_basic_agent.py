@@ -30,39 +30,7 @@ async def main():
         AzureCliCredential(),
         "https://cognitiveservices.azure.com/.default"
     )
-
-    # Managed Identity example:
-    # Works in Azure App Service, Azure Functions, AKS, VMs, etc.
-    #token_provider = get_bearer_token_provider(
-    #    ManagedIdentityCredential(),
-    #    "https://cognitiveservices.azure.com/.default"
-    #)
-
-    # Service Principal example:
-    # Work in local development and production environments.
-    #credential = ClientSecretCredential(
-    #    tenant_id=os.getenv("AZURE_TENANT_ID"),
-    #    client_id=os.getenv("AZURE_CLIENT_ID"),
-    #    client_secret=os.getenv("AZURE_CLIENT_SECRET")  # Store in Key Vault or secrets manager
-    #)
-    #token_provider = get_bearer_token_provider(
-    #    credential,
-    #    "https://cognitiveservices.azure.com/.default"
-    #)
-
-    # DefaultAzureCredential example:
-    # Works in local development and production environments.
-    # 1. Environment variables (service principal)
-    # 2. Workload Identity (Kubernetes)
-    # 3. Managed Identity (Azure services)
-    # 4. Azure CLI (local dev)
-    # 5. Azure PowerShell
-    # 6. Interactive browser login
-    #token_provider = get_bearer_token_provider(
-    #    DefaultAzureCredential(),
-    #    "https://cognitiveservices.azure.com/.default"
-    #)
-
+    
     # Create a chat client
     chat_client = AzureOpenAIChatClient(
         azure_endpoint=endpoint,

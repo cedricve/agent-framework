@@ -106,7 +106,7 @@ async def main():
     )
 
     # Start workflow with initial user message
-    events = [event async for event in workflow.run_stream("I need help with my order")]
+    events = [event async for event in workflow.run_stream("I need help")]
 
     # Process events and collect pending input requests
     pending_requests = []
